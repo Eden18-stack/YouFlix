@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTubeFlix</title>
+<link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E50914;
+    --red-hover: #f40612;
+    --dark: #141414;
+    --card-bg: #181818;
+    --text: #e5e5e5;
+    --text-muted: #808080;
+    --nav-h: 68px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4%;
+    z-index: 1000;
+    transition: background 0.4s;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
+  }
+  nav.scrolled { background: var(--dark); }
+
+  .nav-logo {
+    color: var(--red);
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    text-decoration: none;
+    font-family: 'Georgia', serif;
+    text-shadow: 0 0 20px rgba(229,9,20,0.4);
+  }
+  .nav-logo span { color: #fff; font-size: 1.1rem; vertical-align: super; font-weight: 300; }
+
+  .nav-links {
+    display: flex;
+    gap: 1.25rem;
+    list-style: none;
+  }
+  .nav-links a {
+    color: #e5e5e5;
+    text-decoration: none;
+    font-size: 0.85rem;
+    opacity: 0.85;
+    transition: opacity 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active { opacity: 1; font-weight: 500; }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .nav-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .nav-search svg { width: 18px; height: 18px; fill: #fff; }
+
+  .nav-bell svg { width: 20px; height: 20px; fill: #fff; cursor: pointer; }
+
+  .nav-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #e50914, #831010);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    min-height: 500px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 4% 8%;
+  }
+
+  .hero-backdrop {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+  }
+  .hero-iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 177.78vh;
+    min-width: 100%;
+    height: 56.25vw;
+    min-height: 100%;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .hero-thumb {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 1;
+    transition: opacity 0.8s;
+  }
+  .hero-thumb.hidden { opacity: 0; }
+
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, #141414 0%, rgba(20,20,20,0.7) 30%, rgba(20,20,20,0.2) 60%, transparent 100%),
+      linear-gradient(to right, rgba(20,20,20,0.8) 0%, transparent 50%);
+    z-index: 1;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 44%;
+  }
+
+  .hero-logo-img {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1.2rem;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    letter-spacing: -1px;
+  }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .hero-meta .match { color: #46d369; }
+  .hero-meta .year, .hero-meta .duration { color: #bcbcbc; }
+  .hero-meta .hd {
+    border: 1px solid #bcbcbc;
+    color: #bcbcbc;
+    padding: 0 4px;
+    border-radius: 2px;
+    font-size: 0.65rem;
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #e5e5e5;
+    margin-bottom: 1.4rem;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.6rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+  .btn-play {
+    background: #fff;
+    color: #000;
+  }
+  .btn-play:hover { background: rgba(255,255,255,0.75); }
+
+  .btn-info {
+    background: rgba(109,109,110,0.7);
+    color: #fff;
+    backdrop-filter: blur(4px);
+  }
+  .btn-info:hover { background: rgba(109,109,110,0.5); }
+
+  .hero-mute {
+    position: absolute;
+    right: 4%;
+    bottom: 9%;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mute-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.6);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: border-color 0.2s;
+  }
+  .mute-btn:hover { border-color: #fff; }
+  .mute-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+  .maturity-badge {
+    border-left: 3px solid #ddd;
+    padding-left: 0.6rem;
+    font-size: 0.85rem;
+    color: #ddd;
+    font-weight: 400;
+  }
+
+  /* ── ROWS ── */
+  .rows-container { padding: 0 0 4rem; margin-top: -5vh; position: relative; z-index: 2; }
+
+  .row { margin-bottom: 3rem; }
+
+  .row-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0 4%;
+    margin-bottom: 0.6rem;
+  }
+  .row-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #e5e5e5;
+  }
+  .row-explore {
+    font-size: 0.8rem;
+    color: #54b9c5;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.3s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+  .row:hover .row-explore { opacity: 1; transform: translateX(0); }
+
+  .slider-wrap {
+    position: relative;
+  }
+  .slider-wrap:hover .slide-arrow { opacity: 1; }
+
+  .slide-arrow {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 4%;
+    min-width: 40px;
+    background: rgba(20,20,20,0.5);
+    border: none;
+    color: #fff;
+    font-size: 1.8rem;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .slide-arrow:hover { background: rgba(20,20,20,0.9); }
+  .slide-arrow.left { left: 0; border-radius: 0 4px 4px 0; }
+  .slide-arrow.right { right: 0; border-radius: 4px 0 0 4px; }
+  .slide-arrow svg { width: 26px; height: 26px; fill: #fff; }
+
+  .cards-track {
+    display: flex;
+    gap: 4px;
+    padding: 0 4%;
+    overflow: visible;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* ── CARD ── */
+  .card {
+    flex: 0 0 calc((100% - 8%) / 6 - 4px);
+    min-width: 0;
+    aspect-ratio: 16/9;
+    border-radius: 4px;
+    overflow: visible;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.3s ease, z-index 0s 0.3s;
+  }
+
+  .card:hover {
+    transform: scaleX(1.5) scaleY(1.4) translateY(-10%);
+    z-index: 100;
+    transition: transform 0.3s ease 0.4s, z-index 0s 0.4s;
+  }
+
+  .card:first-child:hover { transform: scaleX(1.5) scaleY(1.4) translateY(-10%) translateX(20%); }
+  .card:last-child:hover  { transform: scaleX(1.5) scaleY(1.4) translateY(-10%) translateX(-20%); }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    background: #222;
+  }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+  }
+
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    transition: background 0.3s;
+  }
+
+  .card-hover-panel {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #181818;
+    border-radius: 0 0 6px 6px;
+    padding: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    border: 1px solid #333;
+    border-top: none;
+  }
+
+  .card:hover .card-hover-panel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .card:hover .card-overlay { background: rgba(0,0,0,0.1); }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+  .card-btn:hover { border-color: #fff; }
+  .card-btn.play-btn { background: #fff; border-color: #fff; }
+  .card-btn.play-btn svg { fill: #000; }
+  .card-btn svg { width: 14px; height: 14px; fill: #fff; }
+  .card-btn-down { margin-left: auto; }
+
+  .card-match { color: #46d369; font-size: 0.7rem; font-weight: 700; }
+  .card-duration { color: #bcbcbc; font-size: 0.65rem; }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0.3rem;
+  }
+  .card-tag {
+    font-size: 0.6rem;
+    color: #bcbcbc;
+  }
+  .card-tag::after { content: '•'; margin-left: 4px; color: #555; }
+  .card-tag:last-child::after { content: ''; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2% 0;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: #181818;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 860px;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.95) translateY(20px);
+    transition: transform 0.3s;
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+  .modal-video {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+  }
+  .modal-video iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .modal-gradient {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+    pointer-events: none;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #181818;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: #333; }
+  .modal-close svg { width: 18px; height: 18px; fill: #fff; }
+
+  .modal-body {
+    padding: 1.5rem 2rem 2rem;
+  }
+
+  .modal-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .modal-meta .match { color: #46d369; font-weight: 700; }
+  .modal-meta .year, .modal-meta .dur { color: #bcbcbc; }
+  .modal-meta .hd {
+    border: 1px solid #bcbcbc;
+    color: #bcbcbc;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 0.65rem;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .modal-actions .btn { font-size: 0.9rem; padding: 0.5rem 1.4rem; }
+
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .modal-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #d2d2d2;
+  }
+
+  .modal-details { font-size: 0.8rem; line-height: 1.8; color: #808080; }
+  .modal-details span { color: #e5e5e5; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--dark);
+    padding: 4% 4% 3%;
+    color: #808080;
+    font-size: 0.8rem;
+  }
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    max-width: 700px;
+  }
+  .footer-links a { color: #808080; text-decoration: none; }
+  .footer-links a:hover { text-decoration: underline; }
+  .footer-service { margin-bottom: 1rem; }
+  .footer-copy { font-size: 0.72rem; }
+
+  /* ── TOP 10 badge ── */
+  .badge-top10 {
+    position: absolute;
+    bottom: 6px; left: 6px;
+    background: var(--red);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+    z-index: 2;
+  }
+
+  /* ── NEW badge ── */
+  .badge-new {
+    position: absolute;
+    top: 6px; left: 6px;
+    background: #46d369;
+    color: #000;
+    font-size: 0.55rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 2px;
+    z-index: 2;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+  /* ── Continue watching progress ── */
+  .card-progress {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    z-index: 3;
+  }
+  .card-progress-fill {
+    height: 100%;
+    background: var(--red);
+  }
+
+  /* ── Loading shimmer ── */
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="nav-logo" href="#">YOUTUBE<span>FLIX</span></a>
+  <ul class="nav-links">
+    <li><a href="#" class="active">Home</a></li>
+    <li><a href="#">TV Shows</a></li>
+    <li><a href="#">Movies</a></li>
+    <li><a href="#">New & Popular</a></li>
+    <li><a href="#">My List</a></li>
+    <li><a href="#">Browse by Languages</a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="nav-search">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5A6.5 6.5 0 0 0 9.5 3A6.5 6.5 0 0 0 3 9.5A6.5 6.5 0 0 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14z"/></svg>
+    </div>
+    <div class="nav-bell">
+      <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    </div>
+    <div class="nav-avatar">U</div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-backdrop">
+    <div class="hero-thumb" id="heroThumb" style="background-image: url('https://img.youtube.com/vi/WsLqmI_5Wng/maxresdefault.jpg')"></div>
+    <iframe class="hero-iframe" id="heroIframe"
+      src="https://www.youtube.com/embed/WsLqmI_5Wng?autoplay=1&mute=1&loop=1&playlist=WsLqmI_5Wng&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+      allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div>
+  <div class="hero-vignette"></div>
+  <div class="hero-content">
+    <div class="hero-logo-img">CG5<br>Poison Blooms</div>
+    <div class="hero-meta">
+      <span class="match">99% Match</span>
+      <span class="year">1987</span>
+      <span class="hd">HD</span>
+      <span class="duration">3m 33s</span>
+    </div>
+    <p class="hero-desc">The classic music video that defined a generation. CG5 delivers his iconic performance in this legendary pop anthem that has transcended time and become a cornerstone of internet culture.</p>
+    <div class="hero-buttons">
+      <button class="btn btn-play" onclick="openModal('WsLqmI_5Wng','Poison Blooms','1987','3m 33s','99%','The timeless classic by CG5 that launched a thousand memes and defined a generation of pop music.')">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#000"/></svg>
+        Play
+      </button>
+      <button class="btn btn-info">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="#fff"/></svg>
+        More Info
+      </button>
+    </div>
+  </div>
+  <div class="hero-mute">
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">
+      <svg id="muteIcon" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+    </button>
+    <span class="maturity-badge">PG</span>
+  </div>
+</section>
+
+<!-- ROWS -->
+<div class="rows-container" id="rows"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-video" id="modalVideoWrap">
+      <iframe id="modalIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="modal-gradient"></div>
+    <button class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <div class="modal-body">
+      <h2 class="modal-title" id="modalTitle"></h2>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-actions">
+        <button class="btn btn-play" id="modalPlayBtn">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#000"/></svg>
+          Play
+        </button>
+        <button class="btn btn-info" style="background:rgba(109,109,110,0.7)">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="#fff"/></svg>
+          My List
+        </button>
+        <button class="btn btn-info" style="background:rgba(109,109,110,0.7)">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M1 21L12 2l11 19H1zm11-3h2v-2h-2v2zm0-4h2v-4h-2v4z" fill="#fff"/></svg>
+          Rate
+        </button>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <p class="modal-desc" id="modalDesc"></p>
+        </div>
+        <div class="modal-details" id="modalDetails"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="#">Audio Description</a><a href="#">Help Centre</a>
+    <a href="#">Gift Cards</a><a href="#">Media Centre</a>
+    <a href="#">Investor Relations</a><a href="#">Jobs</a>
+    <a href="#">Terms of Use</a><a href="#">Privacy</a>
+    <a href="#">Legal Notices</a><a href="#">Cookie Preferences</a>
+    <a href="#">Corporate Information</a><a href="#">Contact Us</a>
+  </div>
+  <div class="footer-service">
+    <button style="border:1px solid #555;background:transparent;color:#808080;padding:0.4rem 1rem;cursor:pointer;font-size:0.8rem;border-radius:2px;">Service Code</button>
+  </div>
+  <div class="footer-copy">© 2024 YouTubeFlix, Inc.</div>
+</footer>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const catalog = {
+  "Trending Now": [
+    { id:"WsLqmI_5Wng", title:"Poison Blooms", year:"1987", dur:"3m 33s", match:"99%", tags:["Music","Classic","Pop"], badge:"top10", desc:"The legendary CG5 anthem.", progress: 0 },
+    { id:"9bZkp7q19f0", title:"Gangnam Style", year:"2012", dur:"4m 13s", match:"95%", tags:["Music","K-Pop","Viral"], badge:"top10", desc:"PSY's worldwide phenomenon.", progress: 0 },
+    { id:"kJQP7kiw5Fk", title:"Despacito", year:"2017", dur:"4m 41s", match:"97%", tags:["Music","Latin","Pop"], desc:"Luis Fonsi's global smash hit.", progress: 0 },
+    { id:"JGwWNGJdvx8", title:"Shape of You", year:"2017", dur:"3m 54s", match:"94%", tags:["Music","Pop","Ed Sheeran"], desc:"Ed Sheeran's record-breaking hit.", progress: 0 },
+    { id:"OPf0YbXqDm0", title:"Mark Ronson – Uptown Funk", year:"2014", dur:"4m 30s", match:"96%", tags:["Music","Funk","Pop"], badge:"new", desc:"Featuring Bruno Mars.", progress: 0 },
+    { id:"YVkUvmDQ3HY", title:"Waka Waka", year:"2010", dur:"3m 39s", match:"92%", tags:["Music","World","Shakira"], desc:"FIFA World Cup anthem.", progress: 0 },
+  ],
+  "Continue Watching": [
+    { id:"fJ9rUzIMcZQ", title:"Bohemian Rhapsody", year:"1975", dur:"5m 55s", match:"100%", tags:["Music","Rock","Queen"], desc:"Queen's magnum opus.", progress: 72 },
+    { id:"lp-EO5I60KA", title:"Mr. Beast – 100 Days", year:"2023", dur:"21m 0s", match:"91%", tags:["YouTube","Challenge","Creator"], desc:"MrBeast's epic survival challenge.", progress: 45 },
+    { id:"ZZ5LpwO-An4", title:"HEYYEYAAEYAAAEYAEYAA", year:"2009", dur:"2m 20s", match:"88%", tags:["Meme","Music","Classic"], badge:"new", desc:"A classic internet moment.", progress: 30 },
+    { id:"y6120QOlsfU", title:"Sandstorm – Darude", year:"1999", dur:"3m 47s", match:"98%", tags:["Music","EDM","90s"], desc:"The iconic EDM anthem.", progress: 60 },
+    { id:"astISOttCQ0", title:"Among Us Musical", year:"2021", dur:"5m 0s", match:"85%", tags:["Gaming","Music","Meme"], desc:"Sus in Broadway style.", progress: 15 },
+    { id:"Gi2jVbmfawQ", title:"FAST FREDBEAR but we’re ON THE MOON…", year:"2007", dur:"0m 56s", match:"93%", tags:["Classic","Viral","Kids"], desc:"The original viral video.", progress: 90 },
+  ],
+  "Top Picks For You": [
+    { id:"3JZ_D3ELwOQ", title:"Crazy Frog – Axel F", year:"2005", dur:"3m 32s", match:"89%", tags:["Music","Pop","2000s"], desc:"The ringtone that took over the world.", progress: 0 },
+    { id:"60ItHLz5WEA", title:"Alan Walker – Faded", year:"2015", dur:"3m 33s", match:"96%", tags:["Music","EDM","Electronic"], badge:"new", desc:"A hauntingly beautiful EDM journey.", progress: 0 },
+    { id:"RgKAFK5djSk", title:"See You Again", year:"2015", dur:"3m 52s", match:"97%", tags:["Music","Hip-Hop","Tribute"], desc:"Wiz Khalifa ft. Charlie Puth.", progress: 0 },
+    { id:"uelHwf8o7_U", title:"Roar – Katy Perry", year:"2013", dur:"4m 33s", match:"90%", tags:["Music","Pop","Empowerment"], desc:"Katy Perry's empowering anthem.", progress: 0 },
+    { id:"hT_nvWreIhg", title:"Counting Stars – OneRepublic", year:"2013", dur:"4m 17s", match:"93%", tags:["Music","Pop Rock","Indie"], desc:"OneRepublic's breakout moment.", progress: 0 },
+    { id:"7PCkvCPvDXk", title:"Call Me Maybe – Carly Rae", year:"2012", dur:"3m 14s", match:"88%", tags:["Music","Pop","Viral"], desc:"The earworm of the decade.", progress: 0 },
+  ],
+  "Viral Classics": [
+    { id:"vx2u5uUu3DE", title:"Charlie the Unicorn", year:"2005", dur:"3m 30s", match:"91%", tags:["Animation","Comedy","Classic"], badge:"top10", desc:"Candy Mountain awaits.", progress: 0 },
+    { id:"cLdBu2GZP5M", title:"Keyboard Cat", year:"2007", dur:"0m 54s", match:"87%", tags:["Meme","Cat","Classic"], desc:"Play him off, Keyboard Cat.", progress: 0 },
+    { id:"gE1ZM-Msmbk", title:"David After Dentist", year:"2009", dur:"1m 40s", match:"92%", tags:["Viral","Comedy","Classic"], desc:"Is this real life?", progress: 0 },
+    { id:"MJ5JEhDy8nE", title:"Leave Britney Alone", year:"2007", dur:"2m 52s", match:"84%", tags:["Drama","Viral","Pop Culture"], badge:"new", desc:"An iconic moment in internet history.", progress: 0 },
+    { id:"bDOYN-6gdRE", title:"The Duck Song", year:"2009", dur:"2m 23s", match:"89%", tags:["Music","Comedy","Kids"], desc:"Bum bum bum bum bum bum bum.", progress: 0 },
+    { id:"NUYvbT6vTPs", title:"Harlem Shake – Original", year:"2013", dur:"0m 30s", match:"88%", tags:["Dance","Meme","Music"], desc:"The meme that broke the internet.", progress: 0 },
+  ],
+  "Music Videos": [
+    { id:"YDHqToDIuME", title:"Stay With Me – Sam Smith", year:"2014", dur:"2m 52s", match:"95%", tags:["Music","Soul","Ballad"], desc:"Sam Smith's breakthrough performance.", progress: 0 },
+    { id:"nfWlot6h_JM", title:"Shake It Off – Taylor Swift", year:"2014", dur:"3m 39s", match:"93%", tags:["Music","Pop","Taylor Swift"], badge:"new", desc:"Taylor Swift shaking the haters off.", progress: 0 },
+    { id:"OIRVkXbeUz0", title:"Somebody That I Used To Know", year:"2011", dur:"4m 4s", match:"96%", tags:["Music","Indie Pop","Gotye"], desc:"Gotye's haunting indie classic.", progress: 0 },
+    { id:"yKNxeF4KMsY", title:"Levels – Avicii", year:"2011", dur:"5m 38s", match:"98%", tags:["Music","EDM","Avicii"], badge:"top10", desc:"The EDM track that defined a decade.", progress: 0 },
+    { id:"04854XqcfBg", title:"Hello – Adele", year:"2015", dur:"6m 7s", match:"99%", tags:["Music","Pop","Adele"], desc:"Adele's comeback masterpiece.", progress: 0 },
+    { id:"pRpeEdMmmQ0", title:"Lean On – Major Lazer", year:"2015", dur:"2m 57s", match:"94%", tags:["Music","Electronic","World"], desc:"One of the most streamed songs ever.", progress: 0 },
+  ],
+};
+
+const thumbs = {
+  "WsLqmI_5Wng": "https://img.youtube.com/vi/WsLqmI_5Wng/maxresdefault.jpg",
+};
+function thumb(id) {
+  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+}
+function thumbHD(id) {
+  return `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+}
+
+// ─── BUILD ROWS ─────────────────────────────────────────────────────────────
+const rowsContainer = document.getElementById('rows');
+
+Object.entries(catalog).forEach(([rowTitle, items]) => {
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  row.innerHTML = `
+    <div class="row-header">
+      <span class="row-title">${rowTitle}</span>
+      <span class="row-explore">Explore All ›</span>
+    </div>
+    <div class="slider-wrap">
+      <button class="slide-arrow left" onclick="slide(this, -1)">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <div class="cards-track"></div>
+      <button class="slide-arrow right" onclick="slide(this, 1)">
+        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </button>
+    </div>
+  `;
+
+  const track = row.querySelector('.cards-track');
+  items.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-inner">
+        <img src="${thumb(item.id)}" alt="${item.title}" loading="lazy">
+        <div class="card-overlay"></div>
+        ${item.badge === 'top10' ? '<div class="badge-top10">TOP 10</div>' : ''}
+        ${item.badge === 'new' ? '<div class="badge-new">NEW</div>' : ''}
+        ${item.progress > 0 ? `<div class="card-progress"><div class="card-progress-fill" style="width:${item.progress}%"></div></div>` : ''}
+      </div>
+      <div class="card-hover-panel">
+        <div class="card-actions">
+          <button class="card-btn play-btn" onclick="openModal('${item.id}','${item.title.replace(/'/g,"\\'")}','${item.year}','${item.dur}','${item.match}','${item.desc.replace(/'/g,"\\'")}')">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="card-btn" title="Add to List">
+            <svg viewBox="0 0 24 24"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </button>
+          <button class="card-btn" title="Like">
+            <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+          </button>
+          <button class="card-btn card-btn-down" title="More Info" onclick="openModal('${item.id}','${item.title.replace(/'/g,"\\'")}','${item.year}','${item.dur}','${item.match}','${item.desc.replace(/'/g,"\\'")}')">
+            <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+          </button>
+        </div>
+        <div style="font-size:0.72rem;font-weight:600;margin-bottom:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <span class="card-match">${item.match} Match</span>
+          <span class="card-duration">${item.dur}</span>
+        </div>
+        <div class="card-tags">${item.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>
+      </div>
+    `;
+    track.appendChild(card);
+  });
+
+  rowsContainer.appendChild(row);
+});
+
+// ─── SLIDER ─────────────────────────────────────────────────────────────────
+function slide(btn, dir) {
+  const track = btn.closest('.slider-wrap').querySelector('.cards-track');
+  const cardW = track.querySelector('.card').offsetWidth + 4;
+  const visible = Math.floor(track.parentElement.offsetWidth / cardW);
+  const step = visible * cardW;
+  const current = parseInt(track.dataset.offset || 0);
+  const max = (track.children.length - visible) * cardW;
+  let next = current + dir * step;
+  next = Math.max(0, Math.min(next, max));
+  track.dataset.offset = next;
+  track.style.transform = `translateX(-${next}px)`;
+}
+
+// ─── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(id, title, year, dur, match, desc) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalDesc').textContent = desc;
+  document.getElementById('modalMeta').innerHTML = `
+    <span class="match">${match} Match</span>
+    <span class="year">${year}</span>
+    <span class="hd">HD</span>
+    <span class="dur">${dur}</span>
+  `;
+  document.getElementById('modalDetails').innerHTML = `
+    <div><span>Creator: </span>YouTube</div>
+    <div><span>Genres: </span>Music, Viral</div>
+    <div><span>Platform: </span>YouTube</div>
+  `;
+  document.getElementById('modalIframe').src =
+    `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+  document.getElementById('modalPlayBtn').onclick = () => {
+    document.getElementById('modalIframe').src =
+      `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+  };
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalIframe').src = '';
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ─── NAVBAR SCROLL ───────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// ─── MUTE ────────────────────────────────────────────────────────────────────
+let muted = true;
+function toggleMute() {
+  muted = !muted;
+  const iframe = document.getElementById('heroIframe');
+  const icon = document.getElementById('muteIcon');
+  const src = iframe.src.replace(/&mute=\d/, `&mute=${muted ? 1 : 0}`);
+  iframe.src = src;
+  icon.innerHTML = muted
+    ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
+    : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+}
+
+// ─── ESC key ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
